@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "465915528889",
+    "project_id": "movi-bdd8d",
+    "storage_bucket": "movi-bdd8d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:465915528889:android:7b7e581769efb855f4fd68",
+        "android_client_info": {
+          "package_name": "com.example.bisaga"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMzvrKmkMzxF49u3Dz-3dlkr-DBBCvOrU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
