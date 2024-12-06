@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:movi/injector.dart';
 import 'package:movi/movie/models/favorite_model.dart';
+import 'package:movi/movie/models/movie_detail_model.dart';
 import 'package:movi/movie/providers/movie_get_detail_provider.dart';
 import 'package:movi/movie/providers/movie_get_videos_provider.dart';
 import 'package:movi/movie/services/favorite_service.dart';
@@ -144,7 +145,6 @@ class _WidgetAppBar extends SliverAppBar {
         ),
       );
 
-  // Add this to the actions list in _WidgetAppBar class
   @override
   List<Widget>? get actions => [
         Consumer<MovieGetDetailProvider>(
@@ -153,67 +153,7 @@ class _WidgetAppBar extends SliverAppBar {
             if (movie != null) {
               return Row(
                 children: [
-                  FutureBuilder<bool>(
-                    future: FavoriteService().isFavorite(movie.id),
-                    builder: (context, snapshot) {
-                      final isFavorite = snapshot.data ?? false;
-                      return Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: CircleAvatar(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
-                          child: IconButton(
-                            icon: Icon(
-                              isFavorite
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              color: isFavorite ? Colors.red : null,
-                            ),
-                            onPressed: () async {
-                              try {
-                                if (FirebaseAuth.instance.currentUser == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                          'Please log in to add favorites'),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                if (isFavorite) {
-                                  await FavoriteService().removeFavorite(
-                                    FirebaseAuth.instance.currentUser!.uid,
-                                    movie.id,
-                                  );
-                                } else {
-                                  await FavoriteService().addFavorite(
-                                    FavoriteModel(
-                                      userId: FirebaseAuth
-                                          .instance.currentUser!.uid,
-                                      movieId: movie.id,
-                                      title: movie.title,
-                                      posterPath: movie.posterPath,
-                                      voteAverage: movie.voteAverage,
-                                      voteCount: movie.voteCount,
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error: ${e.toString()}'),
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                  _FavoriteButton(movie: movie), // Extract to separate stateful widget
                   // Original homepage button
                   Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -270,6 +210,102 @@ class _WidgetAppBar extends SliverAppBar {
           );
         },
       );
+}
+
+// Create a new stateful widget for the favorite button
+class _FavoriteButton extends StatefulWidget {
+  final MovieDetailModel movie;
+
+  const _FavoriteButton({required this.movie});
+
+  @override
+  State<_FavoriteButton> createState() => _FavoriteButtonState();
+}
+
+class _FavoriteButtonState extends State<_FavoriteButton> {
+  bool isFavorite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check initial favorite status
+    _checkFavoriteStatus();
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    final status = await FavoriteService().isFavorite(widget.movie.id);
+    if (mounted) {
+      setState(() {
+        isFavorite = status;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: CircleAvatar(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        child: IconButton(
+          icon: Icon(
+            isFavorite ? Icons.favorite : Icons.favorite_border,
+            color: isFavorite ? Colors.red : null,
+          ),
+          onPressed: () async {
+            if (FirebaseAuth.instance.currentUser == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Please log in to add favorites'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              return;
+            }
+
+            // Update UI immediately
+            setState(() {
+              isFavorite = !isFavorite;
+            });
+
+            try {
+              if (isFavorite) {
+                await FavoriteService().addFavorite(
+                  FavoriteModel(
+                    userId: FirebaseAuth.instance.currentUser!.uid,
+                    movieId: widget.movie.id,
+                    title: widget.movie.title,
+                    posterPath: widget.movie.posterPath,
+                    voteAverage: widget.movie.voteAverage,
+                    voteCount: widget.movie.voteCount,
+                  ),
+                );
+              } else {
+                await FavoriteService().removeFavorite(
+                  FirebaseAuth.instance.currentUser!.uid,
+                  widget.movie.id,
+                );
+              }
+            } catch (e) {
+              // Revert UI if operation fails
+              if (mounted) {
+                setState(() {
+                  isFavorite = !isFavorite;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error: ${e.toString()}'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            }
+          },
+        ),
+      ),
+    );
+  }
 }
 
 class _Content extends StatelessWidget {

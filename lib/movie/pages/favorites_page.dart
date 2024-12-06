@@ -39,14 +39,23 @@ class FavoritesPage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
+          // Add debug prints
           if (snapshot.hasError) {
+            print('Error in favorites stream: ${snapshot.error}');
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No favorites yet'));
+            print('No favorites data available');
+            return const Center(
+              child: Text(
+                'No favorites yet',
+                style: TextStyle(fontSize: 16),
+              ),
+            );
           }
 
+          print('Displaying ${snapshot.data!.length} favorites');
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: snapshot.data!.length,
@@ -61,11 +70,55 @@ class FavoritesPage extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 16),
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
-                onDismissed: (direction) {
-                  favoriteService.removeFavorite(
-                    FirebaseAuth.instance.currentUser!.uid,
-                    favorite.movieId,
+                confirmDismiss: (direction) async {
+                  return await showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text("Confirm"),
+                        content: const Text("Are you sure you want to remove this favorite?"),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text("CANCEL"),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: const Text("DELETE"),
+                          ),
+                        ],
+                      );
+                    },
                   );
+                },
+                onDismissed: (direction) async {
+                  try {
+                    final user = FirebaseAuth.instance.currentUser;
+                    if (user != null) {
+                      await favoriteService.removeFavorite(
+                        user.uid,
+                        favorite.movieId,
+                      );
+                      
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Favorite removed successfully'),
+                          duration: Duration(seconds: 2),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error removing favorite: ${e.toString()}'),
+                        duration: const Duration(seconds: 2),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 },
                 child: Card(
                   elevation: 2,
