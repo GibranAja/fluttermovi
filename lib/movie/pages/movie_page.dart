@@ -31,7 +31,7 @@ class MoviePage extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Text('Movie DB'),
+                const Text('Movi'),
               ],
             ),
             actions: [
