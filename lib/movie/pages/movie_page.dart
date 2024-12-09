@@ -7,6 +7,7 @@ import 'package:movi/movie/pages/movie_search_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:movi/auth/services/auth_service.dart';
 import 'package:movi/auth/pages/login_page.dart';
+import 'package:movi/widget/youtube_player_widget.dart';
 
 import 'movie_pagination_page.dart';
 
@@ -22,6 +23,20 @@ class MoviePage extends StatelessWidget {
             title: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Add YouTube icon button
+                IconButton(
+                  icon: const Icon(Icons.play_circle_fill, color: Colors.red),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const YoutubePlayerWldget(
+                          youtubeKey: '1k6g6sW4J8s',
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: CircleAvatar(
